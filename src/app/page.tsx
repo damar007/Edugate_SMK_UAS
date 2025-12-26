@@ -33,12 +33,12 @@ export default function LoginPage() {
 
     try {
       await signInWithPopup(auth, provider);
-      // Redirect handled by useEffect
+      // Redirect is handled by the useEffect below
     } catch (error) {
       if ((error as any).code !== 'auth/cancelled-popup-request') {
         console.error("Error signing in with Google", error);
       }
-    } finally {
+      // Only set signing in to false if there's an error, otherwise the redirect will happen.
       setIsSigningIn(false);
     }
   };
@@ -66,6 +66,7 @@ export default function LoginPage() {
           data-ai-hint={loginBg.imageHint}
           fill
           className="object-cover"
+          priority
         />
       )}
       <div className="absolute inset-0 bg-primary/80" />
