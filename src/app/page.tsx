@@ -33,10 +33,8 @@ export default function LoginPage() {
 
     try {
       await signInWithPopup(auth, provider);
-      router.push('/dashboard');
+      // Redirect handled by useEffect
     } catch (error) {
-      // The 'auth/cancelled-popup-request' error is common and can be ignored
-      // if it's just the user closing the popup. We'll log other errors.
       if ((error as any).code !== 'auth/cancelled-popup-request') {
         console.error("Error signing in with Google", error);
       }
@@ -46,10 +44,10 @@ export default function LoginPage() {
   };
 
   React.useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [user, loading, router]);
   
   if (loading || user) {
     return (
