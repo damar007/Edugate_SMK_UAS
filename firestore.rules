@@ -1,0 +1,213 @@
+/**
+ * Core Philosophy: This ruleset enforces a security model that combines strict,
+ * path-based user ownership with a clear role-based access control (RBAC) system for
+ * administrators. User-specific data (like student profiles, grades, teacher profiles,
+ * and courses) is isolated within paths that directly correspond to the owner's user ID.
+ * Global data (like schedules and notifications) is managed by administrators, but
+ * individual users can access items specifically assigned to them.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores student data. Owned by the student.
+ * - /users/{userId}/grades/{gradeId}: Subcollection for a student's grades.
+ * - /teachers/{teacherId}: Stores teacher data. Owned by the teacher.
+ * - /teachers/{teacherId}/courses/{courseId}: Subcollection for a teacher's courses.
+ * - /schedules/{scheduleId}: Top-level collection for all schedule items.
+ * - /notifications/{notificationId}: Top-level collection for all notifications.
+ * - /roles_admin/{uid}: A special collection where the existence of a document
+ *   identifies a user as an administrator (Document-Based Access Control).
+ *
+ * Key Security Decisions:
+ * - User Data Isolation: Users can only access data under their own user ID path
+ *   (e.g., `/users/{userId}/...`). Listing other users' data is disallowed.
+ * - Administrator Access: Users with a document in `/roles_admin` are granted
+ *   broad read/write access across most collections for management purposes.
+ * - Global Collections: For collections like `schedules` and `notifications`, writes
+ *   are restricted to admins. Reads are permitted for the specific user the
+ *   document is assigned to (via a `userId` field), preventing data leakage
+ *   while allowing users to see their own information.
+ * - Denormalization for Authorization: Documents in global collections like `schedules`
+ *   and `notifications` contain a denormalized `userId` field. This allows for
+ *   fast and secure rules that grant access to the assigned user without needing
+ *   costly `get()` calls to other documents.
+ * - Write Security: All write operations (`create`, `update`, `delete`) are protected.
+ *   There are no open writes. Updates and deletes always verify that a document
+ *   exists before allowing the operation.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the requesting user's UID matches the provided userId.
+     * This is the foundation of the user-ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if the user has an admin role document.
+     * This is a performant DBAC (Document-Based Access Control) check.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Validates that the student ID in the document body matches the user ID in the path.
+     * Enforces data consistency for documents created under a user's path.
+     */
+    function studentIdMatchesPathOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+    
+    /**
+     * Validates that the student ID is immutable on update.
+     * Prevents re-assigning a user profile to a different user ID.
+     */
+    function studentIdIsImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    /**
+     * Validates that the teacher ID in the document body matches the user ID in the path.
+     * Enforces data consistency for documents created under a teacher's path.
+     */
+    function teacherIdMatchesPathOnCreate(teacherId) {
+      return request.resource.data.id == teacherId;
+    }
+
+    /**
+     * Validates that the teacher ID is immutable on update.
+     * Prevents re-assigning a teacher profile to a different user ID.
+     */
+    function teacherIdIsImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    // ----------------------------------------------------------------------
+    // User (Student) Profile Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages student user profiles.
+     * @path /users/{userId}
+     * @allow A user (uid: 'user123') can create their own profile at `/users/user123`. (create)
+     * @deny A user (uid: 'user456') cannot read or write to `/users/user123`. (get, update)
+     * @principle Restricts access to a user's own data tree and allows self-creation of a profile.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && studentIdMatchesPathOnCreate(userId);
+      allow update: if (isOwner(userId) || isAdmin()) && existsAfter(/databases/$(database)/documents/users/$(userId)) && studentIdIsImmutable();
+      allow delete: if (isOwner(userId) || isAdmin()) && existsAfter(/databases/$(database)/documents/users/$(userId));
+    }
+
+    /**
+     * @description Manages grades for a specific student.
+     * @path /users/{userId}/grades/{gradeId}
+     * @allow A student (uid: 'user123') can read their own grades at `/users/user123/grades/...`. (get, list)
+     * @deny A student (uid: 'user123') cannot create or delete their own grades. (create, delete)
+     * @principle Enforces read-only access for data owners (students), while reserving write access for administrators.
+     */
+    match /users/{userId}/grades/{gradeId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isAdmin() && request.resource.data.studentId == userId;
+      allow update, delete: if isAdmin() && existsAfter(/databases/$(database)/documents/users/$(userId)/grades/$(gradeId));
+    }
+
+    // ----------------------------------------------------------------------
+    // Teacher Profile & Course Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages teacher user profiles.
+     * @path /teachers/{teacherId}
+     * @allow A teacher (uid: 'teacher123') can create and update their own profile at `/teachers/teacher123`. (create, update)
+     * @deny A teacher (uid: 'teacher456') cannot read or write to `/teachers/teacher123`. (get, update)
+     * @principle Restricts access to a user's own data tree and allows self-creation of a profile.
+     */
+    match /teachers/{teacherId} {
+      allow get, list: if isOwner(teacherId) || isAdmin();
+      allow create: if isOwner(teacherId) && teacherIdMatchesPathOnCreate(teacherId);
+      allow update: if (isOwner(teacherId) || isAdmin()) && existsAfter(/databases/$(database)/documents/teachers/$(teacherId)) && teacherIdIsImmutable();
+      allow delete: if (isOwner(teacherId) || isAdmin()) && existsAfter(/databases/$(database)/documents/teachers/$(teacherId));
+    }
+
+    /**
+     * @description Manages courses owned by a specific teacher.
+     * @path /teachers/{teacherId}/courses/{courseId}
+     * @allow A teacher (uid: 'teacher123') can create, read, and delete their own courses under `/teachers/teacher123/courses/...`. (create, get, delete)
+     * @deny A student (uid: 'user456') cannot create or modify a course. (create, update)
+     * @principle Enforces strict document ownership where the owner is defined by the path.
+     */
+    match /teachers/{teacherId}/courses/{courseId} {
+      allow get, list: if isOwner(teacherId) || isAdmin();
+      allow create: if (isOwner(teacherId) || isAdmin()) && request.resource.data.teacherId == teacherId;
+      allow update: if (isOwner(teacherId) || isAdmin()) && existsAfter(/databases/$(database)/documents/teachers/$(teacherId)/courses/$(courseId)) && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if (isOwner(teacherId) || isAdmin()) && existsAfter(/databases/$(database)/documents/teachers/$(teacherId)/courses/$(courseId));
+    }
+
+    // ----------------------------------------------------------------------
+    // Global Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Manages global schedule entries.
+     * @path /schedules/{scheduleId}
+     * @allow A user (uid: 'user123') can read a schedule document if its `userId` field is 'user123'. (get)
+     * @deny A non-admin user cannot create, update, or delete any schedule, or list all schedules. (create, update, delete, list)
+     * @principle Secures a global collection by restricting writes to admins and reads to the assigned user.
+     */
+    match /schedules/{scheduleId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.userId is string;
+      allow update, delete: if isAdmin() && existsAfter(/databases/$(database)/documents/schedules/$(scheduleId));
+    }
+
+    /**
+     * @description Manages global notification entries.
+     * @path /notifications/{notificationId}
+     * @allow A user (uid: 'user123') can read and update a notification if its `userId` field is 'user123'. (get, update)
+     * @deny A non-admin user cannot create or delete any notification. (create, delete)
+     * @principle Secures a global collection, allowing assigned users to update status (e.g., mark as read).
+     */
+    match /notifications/{notificationId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.userId is string;
+      allow update: if (isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid)) && existsAfter(/databases/$(database)/documents/notifications/$(notificationId));
+      allow delete: if isAdmin() && existsAfter(/databases/$(database)/documents/notifications/$(notificationId));
+    }
+
+    // ----------------------------------------------------------------------
+    // Admin Role Definition Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Defines which users are administrators. Read-only for other admins.
+     * @path /roles_admin/{uid}
+     * @allow An admin can check if another user is an admin. (get, list)
+     * @deny All client-side write operations are forbidden to prevent self-promotion to admin status. (create, update, delete)
+     * @principle Locks down a critical authorization collection to prevent privilege escalation from clients.
+     */
+    match /roles_admin/{uid} {
+      allow get, list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

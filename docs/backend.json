@@ -1,0 +1,378 @@
+{
+  "entities": {
+    "Student": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Student",
+      "type": "object",
+      "description": "Represents a student in the EduGate SMK system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Student entity."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The Google ID of the student, obtained from Google OAuth."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the student."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the student."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the student.",
+          "format": "email"
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "The date of birth of the student.",
+          "format": "date-time"
+        },
+        "enrollmentDate": {
+          "type": "string",
+          "description": "The date the student enrolled.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "firstName",
+        "lastName",
+        "email",
+        "enrollmentDate"
+      ]
+    },
+    "Teacher": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Teacher",
+      "type": "object",
+      "description": "Represents a teacher in the EduGate SMK system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Teacher entity."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The Google ID of the teacher, obtained from Google OAuth."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the teacher."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the teacher."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the teacher.",
+          "format": "email"
+        },
+        "hireDate": {
+          "type": "string",
+          "description": "The date the teacher was hired.",
+          "format": "date-time"
+        },
+        "subject": {
+          "type": "string",
+          "description": "The subject the teacher teaches."
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "firstName",
+        "lastName",
+        "email",
+        "hireDate",
+        "subject"
+      ]
+    },
+    "Course": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Course",
+      "type": "object",
+      "description": "Represents a course in the EduGate SMK system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Course entity."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Reference to Teacher. (Relationship: Teacher 1:N Course)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the course."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the course."
+        },
+        "credits": {
+          "type": "number",
+          "description": "The number of credits the course is worth."
+        }
+      },
+      "required": [
+        "id",
+        "teacherId",
+        "name",
+        "description",
+        "credits"
+      ]
+    },
+    "Grade": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Grade",
+      "type": "object",
+      "description": "Represents a grade for a student in a course.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Grade entity."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to Student. (Relationship: Student 1:N Grade)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to Course. (Relationship: Course 1:N Grade)"
+        },
+        "grade": {
+          "type": "number",
+          "description": "The grade the student received in the course."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the grade was given.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "courseId",
+        "grade",
+        "date"
+      ]
+    },
+    "Schedule": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Schedule",
+      "type": "object",
+      "description": "Represents a schedule entry for a student or teacher.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Schedule entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to either Student or Teacher. (Relationship: Student/Teacher 1:N Schedule)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to Course. (Relationship: Course 1:N Schedule)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The start time of the schedule entry.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The end time of the schedule entry.",
+          "format": "date-time"
+        },
+        "dayOfWeek": {
+          "type": "string",
+          "description": "The day of the week for the schedule entry."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "courseId",
+        "startTime",
+        "endTime",
+        "dayOfWeek"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification sent to a student or teacher.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Notification entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to either Student or Teacher. (Relationship: Student/Teacher 1:N Notification)"
+        },
+        "message": {
+          "type": "string",
+          "description": "The message of the notification."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date the notification was sent.",
+          "format": "date-time"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Indicates whether the notification has been read."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "message",
+        "date",
+        "isRead"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "Student",
+          "schema": {
+            "$ref": "#/backend/entities/Student"
+          },
+          "description": "Stores student profile data. Path-based ownership: only the user (or an admin) can access their own profile. Includes the 'googleId' for user identification (though auth handled by Firebase Auth).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user (student)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/teachers/{teacherId}",
+        "definition": {
+          "entityName": "Teacher",
+          "schema": {
+            "$ref": "#/backend/entities/Teacher"
+          },
+          "description": "Stores teacher profile data. Path-based ownership: only the teacher (or an admin) can access their own profile. Includes the 'googleId' for user identification (though auth handled by Firebase Auth).",
+          "params": [
+            {
+              "name": "teacherId",
+              "description": "The unique identifier for the teacher."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/teachers/{teacherId}/courses/{courseId}",
+        "definition": {
+          "entityName": "Course",
+          "schema": {
+            "$ref": "#/backend/entities/Course"
+          },
+          "description": "Stores courses owned by a teacher.  Path based ownership to ensure only teachers can manage their courses.",
+          "params": [
+            {
+              "name": "teacherId",
+              "description": "The unique identifier for the teacher (owner)."
+            },
+            {
+              "name": "courseId",
+              "description": "The unique identifier for the course."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/students/{studentId}/grades/{gradeId}",
+        "definition": {
+          "entityName": "Grade",
+          "schema": {
+            "$ref": "#/backend/entities/Grade"
+          },
+          "description": "Stores grades for a student.  Path-based ownership for secure grade management.",
+          "params": [
+            {
+              "name": "studentId",
+              "description": "The unique identifier for the student."
+            },
+            {
+              "name": "gradeId",
+              "description": "The unique identifier for the grade."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/schedules/{scheduleId}",
+        "definition": {
+          "entityName": "Schedule",
+          "schema": {
+            "$ref": "#/backend/entities/Schedule"
+          },
+          "description": "Stores schedule entries.  Admin access is controlled via `/roles_admin/{uid}`.",
+          "params": [
+            {
+              "name": "scheduleId",
+              "description": "The unique identifier for the schedule entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications. Admin access is controlled via `/roles_admin/{uid}`.",
+          "params": [
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for the notification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{uid}",
+        "definition": {
+          "entityName": "user",
+          "schema": {
+            "$ref": "#/backend/entities/Student"
+          },
+          "description": "DBAC: Existence of a document grants admin privileges.  Authorization rules check `exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))`.",
+          "params": [
+            {
+              "name": "uid",
+              "description": "The Firebase Auth UID of the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the EduGate SMK system. It leverages path-based ownership for user-specific data and segregates data based on access requirements.  The structure avoids hierarchical authorization dependencies (`get()`) by denormalizing relevant authorization data. This enhances security, simplifies rules, and improves debugging. QAPs are supported through structural segregation. Here's a breakdown:\n\n*   **/users/{userId}**:  This collection stores user profiles (Student or Teacher). Path-based ownership ensures that only the user (or admin) can access their profile. The `googleId` is stored here for authentication purposes, even though the actual auth is handled by Firebase Auth.\n*   **/teachers/{teacherId}/courses/{courseId}**: Courses are owned by teachers. Using a subcollection ensures proper ownership and allows teachers to manage their own courses.\n*   **/students/{studentId}/grades/{gradeId}**: Grades are specific to students. Path-based ownership provides a secure and intuitive structure.\n*   **/schedules/{scheduleId}**: Schedules are global and not owned by individual users. This allows administrators to manage all schedules. Authorization will rely on checking if the request.auth.uid exists in `/roles_admin/{uid}`.\n*   **/notifications/{notificationId}**: Notifications are global.  Authorization will rely on checking if the request.auth.uid exists in `/roles_admin/{uid}`. In a production environment, consider batching notifications to specific users or courses to improve efficiency and reduce read costs.\n*   **/roles_admin/{uid}**: This collection implements DBAC. The *existence* of a document with the user's UID grants admin privileges.  Rules simply check `exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))`.  This is more secure and efficient than custom claims or role properties within user documents.\n\nAuthorization Independence is achieved by avoiding `get()` calls in security rules. Path based access (e.g. `/users/{userId}/...`) inherently provides authorization independence.  For global collections (`/schedules`, `/notifications`), admin privileges are checked directly against the `/roles_admin/{uid}` collection, without needing to fetch user documents or perform complex authorization logic.\n\nThe data structure supports the required QAPs (Rules Are Not Filters) via the segregation of roles into the `/roles_admin/{uid}` collection. The `list` operations are secured by validating the user's role against this collection."
+  }
+}
