@@ -24,10 +24,12 @@ import {
   YAxis,
   Tooltip,
 } from 'recharts';
-import { user, schedule, grades, announcements } from '@/lib/data';
-import { Bell, Book, Clock, Star } from 'lucide-react';
+import { schedule, grades, announcements } from '@/lib/data';
+import { Bell, Clock, Star } from 'lucide-react';
+import { useUser } from '@/firebase';
 
 export default function DashboardPage() {
+  const { user } = useUser();
   const todaySchedule = schedule.slice(0, 3); // Mock: just show first 3 for today
 
   const gradeData = grades.reduce((acc, grade) => {
@@ -40,13 +42,15 @@ export default function DashboardPage() {
     }
     return acc;
   }, [] as { subject: string; grades: number[]; average: number }[]);
+  
+  const welcomeName = user?.displayName?.split(' ')[0] || 'Siswa';
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold font-headline">
-            Selamat Datang, {user.name.split(' ')[0]}!
+            Selamat Datang, {welcomeName}!
           </h1>
           <p className="text-muted-foreground">
             Berikut adalah ringkasan aktivitas akademik Anda.
@@ -131,7 +135,7 @@ export default function DashboardPage() {
             <CardDescription>
               Rata-rata nilai per mata pelajaran.
             </CardDescription>
-          </CardHeader>
+          </Header>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={gradeData}>

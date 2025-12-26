@@ -1,9 +1,14 @@
-export const user = {
-  name: 'Siti Aisyah',
-  email: 'siti.aisyah@smk.sch.id',
-  avatar: '/avatar.png',
-  role: 'student',
-};
+// This file contains mock data.
+// In a real application, this data would come from a database or API.
+
+// The user object is now handled by Firebase Authentication.
+// You can get the user's information from the useUser() hook.
+// Example: const { user } = useUser();
+// if (user) {
+//   const name = user.displayName;
+//   const email = user.email;
+//   const avatar = user.photoURL;
+// }
 
 export const schedule = [
   { day: 'Senin', time: '07:00 - 08:30', subject: 'Matematika', teacher: 'Budi Santoso, S.Pd.', room: 'R-101' },

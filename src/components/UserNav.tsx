@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Avatar,
   AvatarFallback,
@@ -16,10 +17,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { user } from '@/lib/data';
+import { useAuth, useUser } from '@/firebase';
 import { CreditCard, LogOut, Settings, User as UserIcon } from 'lucide-react';
 
 export function UserNav() {
+  const { user } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    if (!auth) return;
+    await auth.signOut();
+    router.push('/');
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -27,14 +38,23 @@ export function UserNav() {
       .join('');
   };
 
+  if (!user) {
+    return null;
+  }
+
+  const name = user.displayName || 'User';
+  const email = user.email || '';
+  const avatar = user.photoURL || '';
+
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10 border-2 border-background">
-            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarImage src={avatar} alt={name} />
             <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-              {getInitials(user.name)}
+              {getInitials(name)}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -42,9 +62,9 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-sm font-medium leading-none">{name}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              {email}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -60,11 +80,9 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/">
+        <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Keluar</span>
-          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

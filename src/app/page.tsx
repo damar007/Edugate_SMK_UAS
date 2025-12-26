@@ -1,7 +1,12 @@
+'use client';
+
 import Image from 'next/image';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import React from 'react';
 
 // This is a simplified SVG for the Google logo
 const GoogleIcon = () => (
@@ -12,6 +17,38 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const loginBg = PlaceHolderImages.find(p => p.id === 'login-background');
+  const auth = useAuth();
+  const router = useRouter();
+  const { user, loading } = useUser();
+
+  const handleSignIn = async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account',
+    });
+
+    try {
+      await signInWithPopup(auth, provider);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Error signing in with Google", error);
+    }
+  };
+
+  React.useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+  
+  if (loading || user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen w-full font-headline">
@@ -34,12 +71,14 @@ export default function LoginPage() {
             Gerbang Digital Menuju Pendidikan Vokasi Unggul
           </p>
           <div className="mt-10">
-            <Link href="/dashboard" passHref>
-              <Button size="lg" className="w-full bg-card text-card-foreground hover:bg-card/90 text-lg py-7 shadow-lg transition-transform duration-200 hover:scale-105">
-                <GoogleIcon />
-                Masuk dengan Google
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="w-full bg-card text-card-foreground hover:bg-card/90 text-lg py-7 shadow-lg transition-transform duration-200 hover:scale-105"
+              onClick={handleSignIn}
+              >
+              <GoogleIcon />
+              Masuk dengan Google
+            </Button>
           </div>
           <p className="mt-8 text-xs text-primary-foreground/60">
             Dengan masuk, Anda menyetujui Syarat & Ketentuan dan Kebijakan Privasi kami.

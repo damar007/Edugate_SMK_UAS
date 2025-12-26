@@ -1,16 +1,37 @@
+'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Bell, Menu } from 'lucide-react';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { UserNav } from '@/components/UserNav';
 import { SidebarNav } from '@/components/SidebarNav';
+import { useUser } from '@/firebase';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, loading } = useUser();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr]">
       <div className="hidden border-r bg-card md:block">
