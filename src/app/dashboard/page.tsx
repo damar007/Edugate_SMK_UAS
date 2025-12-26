@@ -135,7 +135,7 @@ export default function DashboardPage() {
             <CardDescription>
               Rata-rata nilai per mata pelajaran.
             </CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={gradeData}>
