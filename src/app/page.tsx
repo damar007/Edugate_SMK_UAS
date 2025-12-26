@@ -20,9 +20,12 @@ export default function LoginPage() {
   const auth = useAuth();
   const router = useRouter();
   const { user, loading } = useUser();
+  const [isSigningIn, setIsSigningIn] = React.useState(false);
 
   const handleSignIn = async () => {
-    if (!auth) return;
+    if (!auth || isSigningIn) return;
+    setIsSigningIn(true);
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account',
@@ -32,7 +35,13 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (error) {
-      console.error("Error signing in with Google", error);
+      // The 'auth/cancelled-popup-request' error is common and can be ignored
+      // if it's just the user closing the popup. We'll log other errors.
+      if ((error as any).code !== 'auth/cancelled-popup-request') {
+        console.error("Error signing in with Google", error);
+      }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -75,9 +84,10 @@ export default function LoginPage() {
               size="lg"
               className="w-full bg-card text-card-foreground hover:bg-card/90 text-lg py-7 shadow-lg transition-transform duration-200 hover:scale-105"
               onClick={handleSignIn}
+              disabled={isSigningIn}
               >
               <GoogleIcon />
-              Masuk dengan Google
+              {isSigningIn ? 'Processing...' : 'Masuk dengan Google'}
             </Button>
           </div>
           <p className="mt-8 text-xs text-primary-foreground/60">
